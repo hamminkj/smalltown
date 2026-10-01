@@ -2,7 +2,7 @@ class_name MetricsSystem
 extends RefCounted
 ## Town outcomes, all on a 0 to 1 scale. Every metric is derived from proficiency, ties, and domain use.
 
-const OUTCOMES := ["job_access", "neighbor_trust", "kids_school", "elder_connection", "economic_vitality", "heritage_vitality"]
+const OUTCOMES := ["job_access", "neighbor_trust", "kids_school", "elder_connection", "economic_vitality", "heritage_vitality", "heritage_word"]
 const HIDDEN := ["segregation", "fragility", "helper_burnout"]
 
 const LABELS := {
@@ -12,6 +12,7 @@ const LABELS := {
 	"elder_connection": "Elder connection",
 	"economic_vitality": "Economic vitality",
 	"heritage_vitality": "Heritage language vitality",
+	"heritage_word": "Heritage word kept",
 	"segregation": "Segregation",
 	"fragility": "Fragility",
 	"helper_burnout": "Helper burnout",
@@ -24,6 +25,7 @@ const DESCRIPTIONS := {
 	"elder_connection": "How well elders can talk with their own families.",
 	"economic_vitality": "Market trades that go smoothly.",
 	"heritage_vitality": "The heritage language passing from parents to kids and used at home.",
+	"heritage_word": "People in heritage homes who still say \"sabrel\" for the market's stuffed flatbread.",
 	"segregation": "How much friendships stay inside one language group. Lower is better.",
 	"fragility": "How much of the contact between language groups runs through just two people. Lower is better.",
 	"helper_burnout": "Share of bilingual helpers near burnout. Lower is better.",
@@ -40,6 +42,7 @@ static func snapshot(st: SimState) -> Dictionary:
 		"elder_connection": elder_connection(st),
 		"economic_vitality": economic_vitality(st),
 		"heritage_vitality": heritage_vitality(st),
+		"heritage_word": heritage_word(st),
 		"segregation": segregation(st),
 		"fragility": fragility(st),
 		"helper_burnout": helper_burnout(st),
@@ -188,6 +191,19 @@ static func heritage_vitality(st: SimState) -> float:
 		var use := 1.0 if talks == 0 else float(h_talks) / talks
 		total += minf(parent_h, kid_h) * use
 		n += 1
+	return 0.0 if n == 0 else total / n
+
+
+## Share of heritage-home residents who still use the heritage word, averaged over
+## every concept that has a heritage-language word.
+static func heritage_word(st: SimState) -> float:
+	var total := 0.0
+	var n := 0
+	for c in st.concepts:
+		for w in st.concepts[c]:
+			if st.word_lang.get(w, "T") == "H":
+				total += variant_share(st, c, w, "H")
+				n += 1
 	return 0.0 if n == 0 else total / n
 
 

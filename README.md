@@ -8,11 +8,11 @@ A complex-systems game about how language moves through a community.
 
 You are the town's community connector. Thirty neighbors live here: some speak the town language at home, and some speak a heritage language. You can't teach anyone or tell anyone what to do. You can only **nudge**: open a place where people meet, hold an event, introduce two people, hire a bilingual helper, or put up a sign. Words, habits, and friendships spread on their own.
 
-At the start you write a **town charter**: you give points to the outcomes your town cares about (jobs, neighbor trust, kids' school success, elder connection, economic vitality, heritage-language vitality). Those outcomes show on your dashboard. Everything else is tracked quietly and revealed in the end-of-year report, so you see what your strategy cost.
+At the start you write a **town charter**: you give points to the outcomes your town cares about (jobs, neighbor trust, kids' school success, elder connection, economic vitality, heritage-language vitality, and keeping the heritage word). Those outcomes show on your dashboard. Everything else is tracked quietly and revealed in the end-of-year report, so you see what your strategy cost.
 
 ## Status
 
-Playable prototype (v0.3). One town, one year (4 seasons of 12 weeks), two languages, two competing word pairs, and a replay with "what if" at the end of the year.
+Playable prototype (v0.4). One town, one year (4 seasons of 12 weeks), two languages, two competing word pairs, and a replay with "what if" at the end of the year.
 
 ## Running it
 
@@ -50,6 +50,8 @@ Words spread through the same conversations as everything else, but each pair te
 **Words follow the language being spoken.** When people speak the heritage language, anyone who speaks it well uses the heritage word. When they speak the town language, people use whichever word they prefer, which is how a loanword travels. So the heritage word's survival at home depends on whether families keep speaking the heritage language at home.
 
 **Switching words** takes hearing a new word from more distinct people than you've heard your current word from (you count as one voice for your own word). Catchy words count for a bit more. Elders need one extra voice, and after switching, a person keeps the new word for at least four weeks.
+
+**Heritage word kept** is a charter outcome: the share of people in heritage homes who still say "sabrel." The "Living Heritage" preset weights it; in other charters it's tracked quietly and often turns up as the year's hidden cost.
 
 Use the **"Map shows who says"** picker on the game screen to switch which word the map highlights. Hover over anyone to see both of their words.
 
@@ -122,7 +124,7 @@ godot --headless --script res://tests/batch_run.gd -- --seeds=10 --only=mixers -
 
 Averages over 20 seeds at the end of the year (0 to 1):
 
-| Strategy | Job access | Heritage vitality | Segregation | Fragility | Says "pop" | "Sabrel" in heritage homes | "Sabrel" in town homes |
+| Strategy | Job access | Heritage vitality | Segregation | Fragility | Says "pop" | Heritage word kept | "Sabrel" in town homes |
 |---|---|---|---|---|---|---|---|
 | No nudges | 0.95 | 0.80 | 0.41 | 0.46 | 0.15 | 0.64 | 0.35 |
 | Mixers (with a "pop" sign) | 1.00 | 0.59 | 0.38 | 0.40 | 0.47 | 0.49 | 0.30 |
@@ -149,4 +151,4 @@ The starter numbers in `docs/design-spec.md` were guesses. Batch testing led to 
 
 ## Not built yet
 
-From `docs/godot-plan.md`: a third language, saving scenarios as `.tres` resources, and sound. Words don't count toward the charter score yet; a "keep the heritage word" charter goal would be a natural addition.
+From `docs/godot-plan.md`: a third language, saving scenarios as `.tres` resources, and sound. A second cross-language pair where a town word could become a loanword in heritage homes would round out the word system.

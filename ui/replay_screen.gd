@@ -281,6 +281,10 @@ func _compare(real: Dictionary, result: Dictionary) -> String:
 	var luck_fx: Array = []
 	for v in verdicts:
 		var is_word: bool = str(v["key"]).begins_with("share:")
+		# "Heritage word kept" already covers heritage-language words in heritage homes.
+		var parts: PackedStringArray = str(v["key"]).split(":")
+		if is_word and parts.size() == 3 and parts[2] == "H" and st.word_lang.get(parts[1], "T") == "H":
+			continue
 		var name: String = MetricsSystem.word_label(v["key"]) if is_word else MetricsSystem.LABELS[v["key"]]
 		var pts := int(round(absf(v["mean"]) * 100))
 		if v["verdict"] == "real":

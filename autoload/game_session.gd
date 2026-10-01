@@ -4,7 +4,7 @@ extends Node
 const PRESETS := {
 	"Jobs First": {"job_access": 5, "economic_vitality": 3, "kids_school": 2},
 	"Families and Elders": {"elder_connection": 5, "heritage_vitality": 3, "kids_school": 2},
-	"Living Heritage": {"heritage_vitality": 5, "elder_connection": 3, "neighbor_trust": 2},
+	"Living Heritage": {"heritage_vitality": 5, "heritage_word": 4, "elder_connection": 3, "neighbor_trust": 2},
 	"Good Neighbors": {"neighbor_trust": 5, "economic_vitality": 2, "elder_connection": 2, "job_access": 1},
 }
 
