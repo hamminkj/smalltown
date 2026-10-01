@@ -16,7 +16,7 @@ var is_vendor := false
 var openness := 0.5
 var shyness := 0.5
 var threshold := 2
-var committed := false          # never switches variants (seed speakers)
+var committed := {}             # concept -> true: never switches words for that concept
 
 # Language state
 var p := {"T": 0.0, "H": 0.0}   # proficiency per language
@@ -26,6 +26,7 @@ var home_lang := "T"            # "T", "H", or "B" (bilingual helper)
 var variant := {}               # concept -> variant name
 var heard := {}                 # concept -> {variant -> {source -> last tick heard}}
 var heard_new := false          # heard something since the last adoption check
+var switched_at := {}           # concept -> tick of the last switch
 
 # Daily life
 var schedule: Array = [0, 0, 0, 0]

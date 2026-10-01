@@ -15,13 +15,16 @@ static func run(st: SimState) -> void:
 		if not v.heard_new:
 			continue
 		v.heard_new = false
-		if v.committed or v.is_helper:
+		if v.is_helper:
 			continue
 		for c in v.heard:
-			_check_adoption(st, v, c)
+			if not v.committed.has(c):
+				_check_adoption(st, v, c)
 
 
 static func _check_adoption(st: SimState, v: Villager, concept: String) -> void:
+	if st.tick - int(v.switched_at.get(concept, -100000)) < int(st.params["habit_ticks"]):
+		return
 	var window: int = st.params["exposure_window"]
 	var ratio: float = st.params["switch_ratio"]
 	var words: Dictionary = v.heard[concept]
@@ -34,13 +37,15 @@ static func _check_adoption(st: SimState, v: Villager, concept: String) -> void:
 				sources.erase(src)
 		counts[word] = sources.size()
 	var current: String = v.variant[concept]
-	var cur_n: int = counts.get(current, 0)
+	var cur_n: float = counts.get(current, 0) + float(st.params["loyalty"])
 	for word in counts:
 		if word == current:
 			continue
 		var n: int = counts[word]
-		if n >= v.threshold and float(n) >= ratio * cur_n:
+		var pull: float = n * float(st.word_appeal.get(word, 1.0))
+		if n >= v.threshold and pull >= ratio * cur_n:
 			v.variant[concept] = word
+			v.switched_at[concept] = st.tick
 			var src: Array = words[word].keys()
 			st.adoptions.append({"tick": st.tick, "id": v.id, "concept": concept, "from": current, "to": word, "sources": src})
 			v.heard[concept] = {}

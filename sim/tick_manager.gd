@@ -10,6 +10,10 @@ func _init(s: SimState) -> void:
 	state = s
 	if state.history.is_empty():
 		state.history.append(MetricsSystem.snapshot(state))
+	for c in state.concepts:
+		for word in state.concepts[c].slice(1):
+			if not state.word_band.has(word):
+				state.word_band[word] = _band(MetricsSystem.variant_share(state, c, word))
 
 
 ## Advances one time slot. Returns true when a season just ended.
@@ -37,10 +41,14 @@ static func _word_news(st: SimState) -> void:
 	for c in st.concepts:
 		for word in st.concepts[c].slice(1):
 			var share := MetricsSystem.variant_share(st, c, word)
-			var band := mini(3, int(floor(share * 4.0 + 0.0001)))
+			var band := _band(share)
 			var old: int = st.word_band.get(word, 0)
 			if band > old:
 				st.log_event("\"%s\" has spread to %s." % [word, BANDS[band]])
 			elif band < old:
 				st.log_event("\"%s\" is fading; now under %s." % [word, BANDS[old]])
 			st.word_band[word] = band
+
+
+static func _band(share: float) -> int:
+	return mini(3, int(floor(share * 4.0 + 0.0001)))

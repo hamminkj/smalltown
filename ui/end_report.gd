@@ -56,7 +56,10 @@ func _ready() -> void:
 	var notes: Array = []
 	notes.append("Heritage-language adults' town language: %d to %d." % [int(start["h_adults_t"] * 100), int(end["h_adults_t"] * 100)])
 	notes.append("Heritage-language children's heritage language: %d to %d." % [int(start["h_kids_h"] * 100), int(end["h_kids_h"] * 100)])
-	notes.append("Villagers who say \"pop\": %d%% to %d%%." % [int(round(start["pop_share"] * 100)), int(round(end["pop_share"] * 100))])
+	notes.append("Villagers who say \"pop\": %d%% to %d%%." % [_pct(start, "share:pop"), _pct(end, "share:pop")])
+	notes.append("Heritage homes that say \"sabrel\": %d%% to %d%%.  Town homes that say it: %d%% to %d%%." % [
+		_pct(start, "share:sabrel:H"), _pct(end, "share:sabrel:H"), _pct(start, "share:sabrel:T"), _pct(end, "share:sabrel:T")])
+	notes.append(_bread_story(end))
 	notes.append("Nudges you used: %d.  Bilingual helpers hired: %d." % [st.nudge_log.size(), st.helper_count])
 	box.add_child(UiStyle.label("\n".join(notes), 15, UiStyle.INK, true))
 
@@ -115,3 +118,20 @@ func _biggest_cost(start: Dictionary, end: Dictionary, weights: Dictionary) -> S
 	var verb := "fell" if worst_key in MetricsSystem.OUTCOMES else "rose"
 	return "Hidden cost: %s %s from %d to %d while you focused elsewhere." % [
 		MetricsSystem.LABELS[worst_key], verb, int(round(start[worst_key] * 100)), int(round(end[worst_key] * 100))]
+
+
+func _pct(snap: Dictionary, key: String) -> int:
+	return int(round(float(snap.get(key, 0.0)) * 100))
+
+
+## One sentence on how the heritage word for stuffed flatbread fared.
+func _bread_story(end: Dictionary) -> String:
+	var h := float(end.get("share:sabrel:H", 0.0))
+	var t := float(end.get("share:sabrel:T", 0.0))
+	if t >= 0.6 and h >= 0.6:
+		return "The town borrowed the heritage word: most neighbors now call the market's stuffed flatbread \"sabrel.\""
+	if h < 0.6 and t < 0.3:
+		return "The heritage word is fading: some heritage families now say \"stuffed bread,\" even at home."
+	if t >= 0.3:
+		return "\"Sabrel\" is spreading into town homes, but the outcome isn't settled yet."
+	return "Heritage families kept \"sabrel,\" but it hasn't caught on in the rest of town."

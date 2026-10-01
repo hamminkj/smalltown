@@ -45,9 +45,11 @@ func _process(_d: float) -> bool:
 				if st.tick % 28 == 0:
 					game._refresh_metrics(false)
 				if over:
-					NudgeSystem.helper(st)
+					NudgeSystem.signage(st, SimState.CAFE, "stuffed flatbread", "sabrel")
 					NudgeSystem.event(st, SimState.CAFE, "heritage")
-			game.map.hover_id = 100
+			game.lens.select(1)
+			game.map.concept = "stuffed flatbread"
+			game.map.hover_id = 5
 			game._refresh_all()
 		4:
 			snap("4_game_midyear")
@@ -57,13 +59,14 @@ func _process(_d: float) -> bool:
 			change_scene_to_file("res://ui/replay_screen.tscn")
 		6:
 			var rp = current_scene
-			var tip := Replay.tipping_week(rp.st)
-			rp._seek(maxi(0, tip * 28 - 10))
+			rp.word_pick.select(1)
+			rp._set_concept("stuffed flatbread")
+			rp._seek(rp.st.tick - 3 * 28)
 			rp._next_switch()
 		7:
 			snap("6_replay")
 			var rp = current_scene
-			rp.whatif_pick.select(rp.whatif_pick.get_item_index(1))
+			rp.whatif_pick.select(rp.whatif_pick.get_item_index(2))
 			rp._run_whatif()
 			rp._focus(-1)
 			rp.map.focus_id = -1

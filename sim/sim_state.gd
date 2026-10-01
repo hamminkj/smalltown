@@ -34,8 +34,12 @@ var params := {
 	"decay_after": 14,            # ticks unused before decay starts
 	"decay_floor": 0.15,          # floor for anyone who once exceeded 0.6
 	"exposure_window": 56,        # ticks an exposure counts toward adoption
-	"switch_ratio": 0.5,          # new-variant sources needed per current-variant source
-	"sign_notice": 0.1,           # chance a villager notices a sign on each visit
+	"switch_ratio": 1.0,          # new-word voices needed per voice for the current word (plus loyalty)
+	"sign_notice": 0.15,          # chance a villager notices a sign on each visit
+	"loyalty": 1.0,               # sources credited to your own current word (you hear yourself)
+	"habit_ticks": 112,           # after switching words, a villager keeps the new word at least this long (4 weeks)
+	"elder_extra_threshold": 1,   # elders need this many more distinct sources to switch
+	"word_switch_level": 0.5,     # heritage proficiency needed to use the heritage word when speaking it
 	"w_gain": 0.02,
 	"s_step": 0.1,
 	"w_idle": 0.001,
@@ -45,6 +49,7 @@ var params := {
 	"burnout_recover": 0.08,      # per tick at home
 	"shared_space_pull": 0.2,     # chance a free slot is spent at a built shared space
 	"event_pull": 0.5,            # chance a free slot is spent at an active event
+	"curious_pull": 0.3,          # heritage nights: share of the pull felt by non-speakers (times openness)
 }
 
 ## Separate random streams per system, so a nudge that changes one system
@@ -62,7 +67,16 @@ var ties := {}                     # key -> Tie
 var adjacency := {}                # id -> {key: true}
 var places: Array = []             # Array of Place
 var place_by_id := {}              # id -> Place
-var concepts := {"fizzy drink": ["soda", "pop"]}
+## Things with competing names. The first word in each list is the starting default.
+## "sabrel" is an invented word in the town's unnamed heritage language.
+var concepts := {
+	"fizzy drink": ["soda", "pop"],
+	"stuffed flatbread": ["stuffed bread", "sabrel"],
+}
+## Which language each word belongs to.
+var word_lang := {"soda": "T", "pop": "T", "stuffed bread": "T", "sabrel": "H"}
+## How catchy each word is: each voice for it counts this much when deciding to switch.
+var word_appeal := {"soda": 1.0, "pop": 1.4, "stuffed bread": 1.0, "sabrel": 1.0}
 
 var budget := SEASON_BUDGET
 var event_log: Array = []          # [{tick, text}]
@@ -200,6 +214,17 @@ func shuffled(arr: Array, r: RandomNumberGenerator) -> Array:
 		out[i] = out[j]
 		out[j] = tmp
 	return out
+
+
+## The word a speaker actually says for a concept in a conversation held in `lang`.
+## Speaking the heritage language, you use the heritage word if you know the language well;
+## speaking the town language, you use whichever word you prefer (so loanwords can travel).
+func word_used(v: Villager, concept: String, lang: String) -> String:
+	if lang != "T" and v.p.get(lang, 0.0) >= params["word_switch_level"]:
+		for w in concepts[concept]:
+			if word_lang.get(w, "T") == lang:
+				return w
+	return v.variant[concept]
 
 
 func log_event(text: String) -> void:

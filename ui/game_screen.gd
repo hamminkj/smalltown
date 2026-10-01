@@ -37,6 +37,7 @@ var intro_btn: Button
 var sign_place: OptionButton
 var sign_variant: OptionButton
 var sign_b: Button
+var lens: OptionButton
 
 
 func _ready() -> void:
@@ -102,6 +103,17 @@ func _build_header(box: VBoxContainer) -> void:
 	box.add_child(UiStyle.label("Charter: " + GameSession.charter_title, 14, UiStyle.MUTED))
 	score_label = UiStyle.label("", 20)
 	box.add_child(score_label)
+
+	var lens_row := HBoxContainer.new()
+	lens_row.add_theme_constant_override("separation", 6)
+	box.add_child(lens_row)
+	lens_row.add_child(UiStyle.label("Map shows who says:", 14, UiStyle.MUTED))
+	lens = OptionButton.new()
+	for c in st.concepts:
+		lens.add_item("\"%s\" (%s)" % [st.concepts[c][1], c])
+		lens.set_item_metadata(lens.item_count - 1, c)
+	lens.item_selected.connect(func(i): map.concept = lens.get_item_metadata(i); map.queue_redraw())
+	lens_row.add_child(lens)
 
 	var speeds := HBoxContainer.new()
 	speeds.add_theme_constant_override("separation", 6)
@@ -197,6 +209,7 @@ func _build_nudges(box: VBoxContainer) -> void:
 		for vname in st.concepts[c]:
 			sign_variant.add_item("\"%s\"" % vname)
 			sign_variant.set_item_metadata(sign_variant.item_count - 1, [c, vname])
+			sign_variant.set_item_tooltip(sign_variant.item_count - 1, "A word for %s" % c)
 	sign_variant.select(1)
 	sign_b = UiStyle.button("Put up a sign (1)", _do_sign)
 	sign_row.add_child(sign_place)
@@ -391,7 +404,10 @@ func _on_hover(id: int) -> void:
 		job_note = "  (job needs %d: %s)" % [int(v.job_req * 100), "meets it" if v.p["T"] >= v.job_req else "below"]
 	lines.append("Town language: %d%s" % [int(v.p["T"] * 100), job_note])
 	lines.append("Heritage language: %d" % int(v.p["H"] * 100))
-	lines.append("Calls a fizzy drink \"%s\"  |  %d ties  |  at the %s" % [v.variant["fizzy drink"], st.adjacency[v.id].size(), st.place_by_id[v.location].title])
+	var words: Array = []
+	for c in st.concepts:
+		words.append("\"%s\"" % v.variant[c])
+	lines.append("Says %s  |  %d ties  |  at the %s" % [" and ".join(words), st.adjacency[v.id].size(), st.place_by_id[v.location].title])
 	info_label.text = "\n".join(lines)
 
 

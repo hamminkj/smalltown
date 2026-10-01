@@ -12,7 +12,7 @@ At the start you write a **town charter**: you give points to the outcomes your 
 
 ## Status
 
-Playable prototype (v0.2). One town, one year (4 seasons of 12 weeks), two languages, one competing word pair ("soda" vs "pop"), and a replay with "what if" at the end of the year.
+Playable prototype (v0.3). One town, one year (4 seasons of 12 weeks), two languages, two competing word pairs, and a replay with "what if" at the end of the year.
 
 ## Running it
 
@@ -36,14 +36,38 @@ Playable prototype (v0.2). One town, one year (4 seasons of 12 weeks), two langu
 | Introduction | 1 | Creates a tie between two people and has them meet at the park |
 | Sign | 1 | A sign at a public place that counts as one more "voice" for a word |
 
+## Two word pairs
+
+Words spread through the same conversations as everything else, but each pair tells a different story.
+
+| Item | Words | Starts | What can happen |
+|---|---|---|---|
+| Fizzy drink | "soda" vs "pop" (both town-language words) | Three committed speakers say "pop" | "Pop" is catchy, but it needs help. With a sign at the market it tips the whole town in about half of towns; without one, almost never. |
+| Stuffed flatbread sold at the market | "stuffed bread" (town language) vs "sabrel" (heritage language) | Heritage homes say "sabrel"; town homes say "stuffed bread" | Two stable endings: the town **borrows** "sabrel" as a loanword, or heritage families **lose** it as kids and workers pick up "stuffed bread." With no nudges it's close to a coin flip. |
+
+"Sabrel" is an invented word: the heritage language in the game is unnamed.
+
+**Words follow the language being spoken.** When people speak the heritage language, anyone who speaks it well uses the heritage word. When they speak the town language, people use whichever word they prefer, which is how a loanword travels. So the heritage word's survival at home depends on whether families keep speaking the heritage language at home.
+
+**Switching words** takes hearing a new word from more distinct people than you've heard your current word from (you count as one voice for your own word). Catchy words count for a bit more. Elders need one extra voice, and after switching, a person keeps the new word for at least four weeks.
+
+Use the **"Map shows who says"** picker on the game screen to switch which word the map highlights. Hover over anyone to see both of their words.
+
+What we found while tuning (24 towns each, details in `tests/word_census.gd`):
+
+- A "sabrel" sign at the market in week 1 tips the town toward borrowing in 21 of 24 towns. The same sign in week 13 often does nothing: by then the town has settled. Early nudges matter most in a system with two stable endings.
+- Heritage nights help heritage homes keep "sabrel" (77% still say it, compared with 67% with no nudges), but they spread it to the rest of town only a little, because people mostly talk with fellow speakers there.
+- Mixer events speed up town-language learning but cost heritage homes their word.
+
 ## Replay and "what if"
 
 ![Replaying how "pop" spread](docs/screenshot-replay.png)
 
 After the year ends, **Replay the year** lets you scrub through time and watch a word move through town:
 
-- **The map** shows everyone at home. A gold ring means they say "pop." Arrows point from the voices that convinced someone to switch (people, or a sign) to the person who switched.
-- **The chart** shows the share of the town using the word, week by week. Triangles mark your nudges, and an orange dot marks the tipping point (the week it passed half the town). Click or drag on the chart to jump.
+- **Pick a word** to trace ("pop" or "sabrel") with the picker in the top corner.
+- **The map** shows everyone at home. A gold ring means they say the word. Arrows point from the voices that convinced someone to switch (people, or a sign) to the person who switched.
+- **The chart** shows the share of the town using the word, week by week. For "sabrel" it also shows heritage homes (teal) and town homes (orange) separately. Triangles mark your nudges, and an orange dot marks the tipping point (the week it passed half the town). Click or drag on the chart to jump.
 - **Next switch** steps to the next person who changed words and highlights their story. Click any line in "The story so far" to highlight that person.
 - **What if?** Pick one of your nudges. The game replays the whole year from the same seed without it, then checks three more times with different luck. It only reports an effect as real if it shows up consistently; anything that changed in some runs but not others is labeled "probably just luck."
 
@@ -58,7 +82,7 @@ Each time slot (4 per day):
 1. **Move:** villagers follow daily schedules (school, work, market, park, home), plus pulls toward shared spaces and events.
 2. **Pair:** people at the same place pick partners, weighted by tie strength and **homophily** (preferring easy conversations).
 3. **Talk:** they use the language they share best, with place norms and children's lean toward the town language. Success depends on shared proficiency; both people learn, more when the partner is stronger.
-4. **Adopt:** **complex contagion.** A villager switches words only after hearing the new one from enough *different* sources (2, or 3 if shy), compared against sources for their current word. Three "committed" speakers always say "pop."
+4. **Adopt:** **complex contagion.** A villager switches words only after hearing the new one from enough *different* sources (2, or 3 if shy, plus one for elders), and from more sources than their current word (counting themselves). Three "committed" speakers always say "pop."
 5. **Decay:** unused languages fade slowly; unused ties weaken.
 6. **Rewire (weekly):** the **adaptive network.** Some villagers drop a frustrating tie and keep an easy new one, so clusters harden unless you intervene.
 
@@ -77,6 +101,7 @@ world/spread_chart.gd      Weekly spread chart with nudge markers and tipping po
 tests/batch_run.gd         Headless tuning runs, writes tests/output/results.csv
 tests/smoke_test.gd        Loads every screen and plays a full year
 tests/determinism_test.gd  Checks reruns match exactly and nudges don't leak luck
+tests/word_census.gd       Runs 24 towns and counts how each word pair ended
 tests/screenshots.gd       Renders each screen to tests/output/*.png
 docs/                      Design spec, Godot plan, and starting roster
 ```
@@ -88,6 +113,7 @@ From this folder (replace `godot` with your Godot executable path):
 ```
 godot --headless --script res://tests/smoke_test.gd
 godot --headless --script res://tests/determinism_test.gd
+godot --headless --script res://tests/word_census.gd -- nosign:1 sabrelsign:1
 godot --headless --script res://tests/batch_run.gd -- --seeds=20
 godot --headless --script res://tests/batch_run.gd -- --seeds=10 --only=mixers --set=gain:0.01,homophily:1.5
 ```
@@ -96,13 +122,13 @@ godot --headless --script res://tests/batch_run.gd -- --seeds=10 --only=mixers -
 
 Averages over 20 seeds at the end of the year (0 to 1):
 
-| Strategy | Job access | Heritage vitality | Segregation | Fragility | Says "pop" |
-|---|---|---|---|---|---|
-| No nudges | 0.95 | 0.80 | 0.41 | 0.46 | 0.47 (patchy) |
-| Mixers | 1.00 | 0.59 | 0.38 | 0.40 | 0.96 (tipped) |
-| Heritage care | 0.94 | 0.85 | 0.47 | 0.48 | 0.11 |
+| Strategy | Job access | Heritage vitality | Segregation | Fragility | Says "pop" | "Sabrel" in heritage homes | "Sabrel" in town homes |
+|---|---|---|---|---|---|---|---|
+| No nudges | 0.95 | 0.80 | 0.41 | 0.46 | 0.15 | 0.64 | 0.35 |
+| Mixers (with a "pop" sign) | 1.00 | 0.59 | 0.38 | 0.40 | 0.47 | 0.49 | 0.30 |
+| Heritage care | 0.94 | 0.85 | 0.48 | 0.49 | 0.10 | 0.68 | 0.20 |
 
-No single strategy wins every charter, which is the point. A single sign at the market tips the town to "pop" in every seed tested, but the tipping week ranges from week 3 to week 22.
+No single strategy wins every charter, which is the point.
 
 ## Changes from the design spec (v0.1)
 
@@ -115,10 +141,12 @@ The starter numbers in `docs/design-spec.md` were guesses. Batch testing led to 
 - **Heritage night** event theme, so players have a lever that supports the heritage language.
 - **Helpers** can hold up to 3 conversations per time slot, and learners seek them out; otherwise they never felt any strain.
 - **Fragility** is now the share of cross-group contact carried by the top two bridge people (the network-split version always read 0 in a town this connected).
-- **Signs are noticed 10% of the time** per visit (`sign_notice`). When every passerby read every sign, one sign flipped the whole town in under a week; now "pop" lingers near 20% for weeks, then tips.
+- **Signs are noticed 15% of the time** per visit (`sign_notice`). When every passerby read every sign, one sign flipped the whole town in under a week.
+- **Switching words (v0.3):** the bar is now "more voices than your current word, counting yourself," with a four-week habit after each switch. The v0.2 rule let people flip back and forth almost daily (hundreds of switches a year); now it's a few dozen. "Pop" got an appeal of 1.4 so a sign can still tip it.
+- **Heritage nights** draw mostly heritage-language speakers, plus a few curious neighbors. When they drew everyone equally, they pulled heritage families out of their homes and actually hurt the heritage word.
 - **Events start the next day** and run for a week, so buying one never reshuffles anyone's plans for today.
 - **Town news** reports word milestones (a quarter, half, three quarters of the town) instead of every switch; the replay holds the full story.
 
 ## Not built yet
 
-From `docs/godot-plan.md`: a second concept and cross-language word pairs, a third language, saving scenarios as `.tres` resources, and sound.
+From `docs/godot-plan.md`: a third language, saving scenarios as `.tres` resources, and sound. Words don't count toward the charter score yet; a "keep the heritage word" charter goal would be a natural addition.

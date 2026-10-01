@@ -9,7 +9,7 @@ extends SceneTree
 
 const COLUMNS := ["job_access", "neighbor_trust", "kids_school", "elder_connection",
 	"economic_vitality", "heritage_vitality", "segregation", "fragility", "helper_burnout",
-	"pop_share", "h_adults_t", "h_kids_h"]
+	"share:pop", "share:sabrel:H", "share:sabrel:T", "h_adults_t", "h_kids_h"]
 
 const STRATEGIES := ["no_nudges", "mixers", "heritage_care"]
 

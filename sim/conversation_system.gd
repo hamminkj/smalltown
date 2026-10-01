@@ -135,8 +135,8 @@ static func talk(st: SimState, a: Villager, b: Villager, place: Place) -> Dictio
 
 	if success:
 		for c in st.concepts:
-			a.hear(c, b.variant[c], b.id, st.tick)
-			b.hear(c, a.variant[c], a.id, st.tick)
+			a.hear(c, st.word_used(b, c, lang), b.id, st.tick)
+			b.hear(c, st.word_used(a, c, lang), a.id, st.tick)
 
 	# Weekly stats for metrics
 	var ws := st.week_stats

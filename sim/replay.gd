@@ -17,20 +17,26 @@ static func variant_at(st: SimState, id: int, concept: String, tick: int) -> Str
 	return word
 
 
-## Share of residents using a word at a given tick.
-static func share_at(st: SimState, concept: String, word: String, tick: int) -> float:
-	var res := st.residents()
+## Share of residents (optionally one home-language group) using a word at a given tick.
+static func share_at(st: SimState, concept: String, word: String, tick: int, group: String = "") -> float:
+	var total := 0
 	var n := 0
-	for v: Villager in res:
+	for v: Villager in st.residents():
+		if group != "" and v.home_lang != group:
+			continue
+		total += 1
 		if variant_at(st, v.id, concept, tick) == word:
 			n += 1
-	return float(n) / res.size()
+	return 0.0 if total == 0 else float(n) / total
 
 
-## First week the word reached at least half the town, or -1.
-static func tipping_week(st: SimState) -> int:
+## First week a word went from under half the town to at least half, or -1.
+static func tipping_week(st: SimState, word: String = "pop") -> int:
+	var key := MetricsSystem.share_key(word)
+	if st.history.is_empty() or float(st.history[0].get(key, 0.0)) >= 0.5:
+		return -1
 	for snap in st.history:
-		if float(snap["pop_share"]) >= 0.5:
+		if float(snap.get(key, 0.0)) >= 0.5:
 			return int(snap["week"])
 	return -1
 
@@ -174,7 +180,10 @@ static func _bump(progress: Array) -> void:
 ## verdict: "real" (same direction in nearly every run), "luck" (only in some runs), or "none".
 static func judge(real: Dictionary, result: Dictionary) -> Array:
 	var out: Array = []
-	var keys: Array = MetricsSystem.OUTCOMES + MetricsSystem.HIDDEN + ["pop_share"]
+	var keys: Array = MetricsSystem.OUTCOMES + MetricsSystem.HIDDEN
+	for k in real:
+		if str(k).begins_with("share:"):
+			keys.append(k)
 	for k in keys:
 		var here := float(real[k]) - float(result["without"][k])
 		var diffs: Array = [here]

@@ -25,7 +25,7 @@ func _init() -> void:
 
 	var same: SimState = Replay.rerun(42, st.nudge_log)["state"]
 	var ok := true
-	for k in MetricsSystem.OUTCOMES + MetricsSystem.HIDDEN + ["pop_share"]:
+	for k in MetricsSystem.OUTCOMES + MetricsSystem.HIDDEN + MetricsSystem.word_keys(st):
 		if not is_equal_approx(float(original[k]), float(same.history[-1][k])):
 			print("MISMATCH ", k, ": ", original[k], " vs ", same.history[-1][k])
 			ok = false
@@ -38,13 +38,13 @@ func _init() -> void:
 	print("nudges: ", st.nudge_log.size())
 	for i in st.nudge_log.size():
 		print("  ", Replay.describe_nudge(st, st.nudge_log[i]))
-	print("pop share with sign: %.2f, without sign: %.2f" % [original["pop_share"], alt.history[-1]["pop_share"]])
+	print("pop share with sign: %.2f, without sign: %.2f" % [original["share:pop"], alt.history[-1]["share:pop"]])
 	print("tipping week: ", Replay.tipping_week(st), "  share at week 6: %.2f" % Replay.share_at(st, "fizzy drink", "pop", 6 * 28))
 	var signs := Replay.sign_places(st)
 	for a in st.adoptions.slice(0, 3):
 		print("  wk %d: %s" % [int(a["tick"]) / 28 + 1, Replay.describe_adoption(st, a, signs)])
-	# Separate random streams: removing a sign may only change who says what.
-	for k in MetricsSystem.OUTCOMES + MetricsSystem.HIDDEN:
+	# Separate random streams: removing a "pop" sign may only change who says "pop".
+	for k in MetricsSystem.OUTCOMES + MetricsSystem.HIDDEN + [MetricsSystem.share_key("sabrel")]:
 		if not is_equal_approx(float(original[k]), float(alt.history[-1][k])):
 			print("LEAK: removing the sign changed ", k, ": ", original[k], " vs ", alt.history[-1][k])
 			ok = false
@@ -56,21 +56,22 @@ func _init() -> void:
 		short_mgr.step()
 	Replay.close_out(short)
 	var short_again: SimState = Replay.rerun(9, short.nudge_log, -1, short.tick)["state"]
-	for k in MetricsSystem.OUTCOMES + MetricsSystem.HIDDEN + ["pop_share"]:
+	for k in MetricsSystem.OUTCOMES + MetricsSystem.HIDDEN + MetricsSystem.word_keys(short):
 		if not is_equal_approx(float(short.history[-1][k]), float(short_again.history[-1][k])):
 			print("MISMATCH (early end) ", k)
 			ok = false
 	var wi := Replay.whatif(9, short.nudge_log, 0, short.tick)
 	for v in Replay.judge(short.history[-1], wi):
-		if v["key"] != "pop_share" and v["verdict"] != "none":
+		if not str(v["key"]).begins_with("share:pop") and v["verdict"] != "none":
 			print("LEAK: sign what-if flagged ", v["key"], " as ", v["verdict"])
 			ok = false
 	var skip_cafe: Dictionary = Replay.rerun(42, st.nudge_log, 0)
 	print("without the cafe, failed later nudges: ", skip_cafe["failed"])
 	# variant_at must agree with live state at the end
 	for v: Villager in st.villagers:
-		if Replay.variant_at(st, v.id, "fizzy drink", st.tick) != v.variant["fizzy drink"]:
-			print("MISMATCH variant_at for ", v.display_name)
-			ok = false
+		for c in st.concepts:
+			if Replay.variant_at(st, v.id, c, st.tick) != v.variant[c]:
+				print("MISMATCH variant_at for ", v.display_name, " ", c)
+				ok = false
 	print("DETERMINISM OK" if ok else "DETERMINISM FAILED")
 	quit(0 if ok else 1)

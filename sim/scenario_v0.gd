@@ -125,11 +125,13 @@ static func _build_villagers(st: SimState) -> void:
 		v.shyness = row[8]
 		v.threshold = 3 if v.shyness > 0.7 else 2
 		v.home_lang = "H" if v.household in H_HOMES else "T"
-		for c in st.concepts:
-			v.variant[c] = "soda"
+		v.variant["fizzy drink"] = "soda"
+		v.variant["stuffed flatbread"] = "sabrel" if v.home_lang == "H" else "stuffed bread"
+		if v.stage == Villager.Stage.ELDER:
+			v.threshold += int(st.params["elder_extra_threshold"])
 		if v.id in POP_SEEDS:
 			v.variant["fizzy drink"] = "pop"
-			v.committed = true
+			v.committed["fizzy drink"] = true
 		st.add_villager(v)
 
 

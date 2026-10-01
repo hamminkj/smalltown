@@ -80,7 +80,7 @@ static func helper(st: SimState) -> bool:
 	v.set_prof("H", 0.9)
 	v.last_used = {"T": st.tick, "H": st.tick}
 	for c in st.concepts:
-		v.variant[c] = "soda"
+		v.variant[c] = st.concepts[c][0]
 	st.add_villager(v)
 	# A private random stream for the newcomer's first day, so hiring doesn't shift anyone else's luck.
 	var first_day := RandomNumberGenerator.new()

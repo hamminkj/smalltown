@@ -21,6 +21,7 @@ var _off := Vector2.ZERO
 
 func setup(state: SimState) -> void:
 	st = state
+	concept = st.concepts.keys()[0]
 	word = st.concepts[concept][1]
 	signs = Replay.sign_places(st)
 	# Helpers get ids 100, 101, ... and signs get sources -1, -2, ... in the order they were bought.
@@ -65,8 +66,8 @@ func _draw() -> void:
 		draw_rect(rect, UiStyle.LINE.darkened(0.1), false, 1.0)
 		draw_string(font, rect.position + Vector2(6, 15) * _k, pl.title, HORIZONTAL_ALIGNMENT_LEFT, rect.size.x, int(12 * _k), UiStyle.MUTED)
 		for sgn in pl.signs:
-			if sgn["variant"] == word and _sign_up(int(sgn["source"])):
-				draw_string(font, rect.position + Vector2(6, rect.size.y / _k + 13) * _k, "Sign: " + word, HORIZONTAL_ALIGNMENT_LEFT, -1, int(12 * _k), UiStyle.GOLD.darkened(0.3))
+			if sgn["concept"] == concept and _sign_up(int(sgn["source"])):
+				draw_string(font, rect.position + Vector2(6, rect.size.y / _k + 13) * _k, "Sign: " + str(sgn["variant"]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(12 * _k), UiStyle.GOLD.darkened(0.3))
 
 	_layout()
 

@@ -7,6 +7,8 @@ signal scrubbed(tick: int)
 
 var st: SimState
 var tick := 0
+var word := "pop"
+var by_group := false       # also draw heritage-home and town-home lines
 var _plot := Rect2()
 
 
@@ -36,13 +38,11 @@ func _draw() -> void:
 		draw_string(font, Vector2(x + 3, _plot.end.y + 14), "S%d" % (s + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UiStyle.MUTED)
 	draw_string(font, Vector2(_plot.position.x + 3, _plot.end.y + 14), "S1", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, UiStyle.MUTED)
 
-	# Share line
-	var pts := PackedVector2Array()
-	for snap in st.history:
-		var t := int(snap.get("tick", int(snap["week"]) * SimState.TICKS_PER_WEEK))
-		pts.append(Vector2(_x(t, end_tick), _plot.end.y - float(snap["pop_share"]) * _plot.size.y))
-	if pts.size() > 1:
-		draw_polyline(pts, UiStyle.GOLD.darkened(0.15), 2.5, true)
+	# Share lines
+	if by_group:
+		_line(MetricsSystem.share_key(word, "H"), UiStyle.TEAL, 2.0, end_tick)
+		_line(MetricsSystem.share_key(word, "T"), UiStyle.ORANGE, 2.0, end_tick)
+	_line(MetricsSystem.share_key(word), UiStyle.GOLD.darkened(0.15), 3.0, end_tick)
 
 	# Nudge markers
 	for e in st.nudge_log:
@@ -50,7 +50,7 @@ func _draw() -> void:
 		draw_colored_polygon(PackedVector2Array([Vector2(x, _plot.end.y + 2), Vector2(x - 5, _plot.end.y + 10), Vector2(x + 5, _plot.end.y + 10)]), UiStyle.INK)
 
 	# Tipping point
-	var tip := Replay.tipping_week(st)
+	var tip := Replay.tipping_week(st, word)
 	if tip >= 0:
 		var tx := _x(tip * SimState.TICKS_PER_WEEK, end_tick)
 		draw_circle(Vector2(tx, _plot.end.y - 0.5 * _plot.size.y), 4.0, UiStyle.ORANGE)
@@ -59,6 +59,15 @@ func _draw() -> void:
 	# Playhead
 	var px := _x(tick, end_tick)
 	draw_line(Vector2(px, _plot.position.y), Vector2(px, _plot.end.y), UiStyle.INK, 2.0)
+
+
+func _line(key: String, col: Color, width: float, end_tick: int) -> void:
+	var pts := PackedVector2Array()
+	for snap in st.history:
+		var t := int(snap.get("tick", int(snap["week"]) * SimState.TICKS_PER_WEEK))
+		pts.append(Vector2(_x(t, end_tick), _plot.end.y - float(snap.get(key, 0.0)) * _plot.size.y))
+	if pts.size() > 1:
+		draw_polyline(pts, col, width, true)
 
 
 func _x(t: int, end_tick: int) -> float:

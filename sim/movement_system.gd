@@ -67,7 +67,7 @@ static func roll_day(st: SimState, v: Villager, r: RandomNumberGenerator) -> Arr
 		if v.stage == Villager.Stage.CHILD and i == 3:
 			continue
 		var event_place := _event_place(st, st.tick + i)
-		if event_place >= 0 and d[base] < st.params["event_pull"]:
+		if event_place >= 0 and d[base] < _event_pull(st, v, event_place):
 			sched[i] = event_place
 			continue
 		var k := 1
@@ -78,6 +78,16 @@ static func roll_day(st: SimState, v: Villager, r: RandomNumberGenerator) -> Arr
 				break
 			k += 1
 	return sched
+
+
+## Mixers draw everyone. Heritage nights mostly draw people who speak the heritage
+## language, plus a few curious neighbors (more if they're open to new things).
+static func _event_pull(st: SimState, v: Villager, place_id: int) -> float:
+	var pull: float = st.params["event_pull"]
+	var pl: Place = st.place_by_id[place_id]
+	if pl.event_theme == "heritage" and v.p["H"] < 0.5:
+		pull *= st.params["curious_pull"] * v.openness
+	return pull
 
 
 static func _event_place(st: SimState, tick: int) -> int:

@@ -43,10 +43,33 @@ static func snapshot(st: SimState) -> Dictionary:
 		"segregation": segregation(st),
 		"fragility": fragility(st),
 		"helper_burnout": helper_burnout(st),
-		"pop_share": variant_share(st, "fizzy drink", "pop"),
 		"h_adults_t": mean_prof(st, "H", Villager.Stage.ADULT, "T"),
 		"h_kids_h": mean_prof(st, "H", Villager.Stage.CHILD, "H"),
-	}
+	}.merged(word_shares(st))
+
+
+## Key for a word's share of the town ("" = everyone, "H" or "T" = one home-language group).
+static func share_key(word: String, group: String = "") -> String:
+	return "share:%s" % word if group == "" else "share:%s:%s" % [word, group]
+
+
+## The readout keys for every word that competes with a default, in a stable order.
+static func word_keys(st: SimState) -> Array:
+	var out: Array = []
+	for c in st.concepts:
+		for w in st.concepts[c].slice(1):
+			out.append(share_key(w))
+			out.append(share_key(w, "H"))
+			out.append(share_key(w, "T"))
+	return out
+
+
+static func word_label(key: String) -> String:
+	var parts := key.split(":")
+	var label := "Saying \"%s\"" % parts[1]
+	if parts.size() > 2:
+		label += " in heritage homes" if parts[2] == "H" else " in town homes"
+	return label
 
 
 static func sample_weekly(st: SimState) -> Dictionary:
@@ -232,13 +255,26 @@ static func helper_burnout(st: SimState) -> float:
 
 # ---- extra readouts ----
 
-static func variant_share(st: SimState, concept: String, vname: String) -> float:
-	var res := st.residents()
+static func word_shares(st: SimState) -> Dictionary:
+	var out := {}
+	for c in st.concepts:
+		for w in st.concepts[c].slice(1):
+			out[share_key(w)] = variant_share(st, c, w)
+			out[share_key(w, "H")] = variant_share(st, c, w, "H")
+			out[share_key(w, "T")] = variant_share(st, c, w, "T")
+	return out
+
+
+static func variant_share(st: SimState, concept: String, vname: String, group: String = "") -> float:
+	var total := 0
 	var n := 0
-	for v: Villager in res:
+	for v: Villager in st.residents():
+		if group != "" and v.home_lang != group:
+			continue
+		total += 1
 		if v.variant[concept] == vname:
 			n += 1
-	return float(n) / res.size()
+	return 0.0 if total == 0 else float(n) / total
 
 
 static func mean_prof(st: SimState, group: String, stage: int, lang: String) -> float:

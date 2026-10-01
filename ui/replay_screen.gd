@@ -19,6 +19,9 @@ var acc := 0.0
 var signs := {}
 var scroll: ScrollContainer
 var worker: Thread = null
+var title_label: Label
+var word_pick: OptionButton
+var chart_note: Label
 var progress: Array = [0]
 
 
@@ -52,7 +55,20 @@ func _ready() -> void:
 	box.add_theme_constant_override("separation", 8)
 	scroll.add_child(box)
 
-	box.add_child(UiStyle.label("How \"%s\" spread" % map.word, 24))
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 8)
+	box.add_child(head)
+	title_label = UiStyle.label("", 24)
+	head.add_child(title_label)
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(spacer)
+	word_pick = OptionButton.new()
+	for c in st.concepts:
+		word_pick.add_item("\"%s\"" % st.concepts[c][1])
+		word_pick.set_item_metadata(word_pick.item_count - 1, c)
+	word_pick.item_selected.connect(func(i): _set_concept(word_pick.get_item_metadata(i)))
+	head.add_child(word_pick)
 	time_label = UiStyle.label("", 16)
 	box.add_child(time_label)
 	share_label = UiStyle.label("", 15, UiStyle.MUTED)
@@ -62,7 +78,8 @@ func _ready() -> void:
 	chart.st = st
 	chart.scrubbed.connect(_seek)
 	box.add_child(chart)
-	box.add_child(UiStyle.label("Triangles mark your nudges. Click or drag on the chart to jump.", 12, UiStyle.MUTED))
+	chart_note = UiStyle.label("", 12, UiStyle.MUTED, true)
+	box.add_child(chart_note)
 
 	var controls := HBoxContainer.new()
 	controls.add_theme_constant_override("separation", 6)
@@ -116,10 +133,23 @@ func _ready() -> void:
 	credit.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(credit)
 
-	# Start just before the first switch to the word, or at the beginning.
+	_set_concept(st.concepts.keys()[0])
+
+
+## Switch which word pair the replay traces, and jump to just before its first switch.
+func _set_concept(c: String) -> void:
+	map.concept = c
+	map.word = st.concepts[c][1]
+	map.focus_id = -1
+	chart.word = map.word
+	chart.by_group = st.word_lang.get(map.word, "T") != "T"
+	title_label.text = "How \"%s\" spread" % map.word
+	chart_note.text = "Triangles mark your nudges. Click or drag on the chart to jump."
+	if chart.by_group:
+		chart_note.text = "Teal: heritage homes. Orange: town homes. Gold: the whole town. " + chart_note.text
 	var start := 0
 	for a in st.adoptions:
-		if a["to"] == map.word:
+		if a["concept"] == c:
 			start = maxi(0, int(a["tick"]) - SimState.TICKS_PER_WEEK)
 			break
 	_seek(start)
@@ -148,7 +178,7 @@ func _toggle_play() -> void:
 
 func _next_switch() -> void:
 	for a in st.adoptions:
-		if int(a["tick"]) > map.tick:
+		if int(a["tick"]) > map.tick and a["concept"] == map.concept:
 			_focus(int(a["id"]))
 			_seek(int(a["tick"]))
 			return
@@ -168,6 +198,10 @@ func _seek(t: int) -> void:
 	time_label.text = "Season %d, Week %d" % [mini(wk / SimState.WEEKS_PER_SEASON + 1, SimState.SEASONS), wk % SimState.WEEKS_PER_SEASON + 1]
 	var share := Replay.share_at(st, map.concept, map.word, t)
 	share_label.text = "%d%% of the town says \"%s\"" % [int(round(share * 100)), map.word]
+	if chart.by_group:
+		share_label.text += "  (heritage homes %d%%, town homes %d%%)" % [
+			int(round(Replay.share_at(st, map.concept, map.word, t, "H") * 100)),
+			int(round(Replay.share_at(st, map.concept, map.word, t, "T") * 100))]
 	_update_story(t)
 	map.queue_redraw()
 	chart.queue_redraw()
@@ -176,14 +210,16 @@ func _seek(t: int) -> void:
 func _update_story(t: int) -> void:
 	var lines: Array = []
 	var nudge_i := st.nudge_log.size() - 1
-	var shown := 0
 	var idx := st.adoptions.size() - 1
 	while idx >= 0 and int(st.adoptions[idx]["tick"]) > t:
 		idx -= 1
 	while nudge_i >= 0 and int(st.nudge_log[nudge_i]["tick"]) > t:
 		nudge_i -= 1
-	# Merge recent switches and nudges, newest first
-	while shown < 5 and (idx >= 0 or nudge_i >= 0):
+	# Merge recent switches (for this word pair) and your nudges, newest first.
+	while lines.size() < 5 and (idx >= 0 or nudge_i >= 0):
+		if idx >= 0 and st.adoptions[idx]["concept"] != map.concept:
+			idx -= 1
+			continue
 		var use_nudge := nudge_i >= 0 and (idx < 0 or int(st.nudge_log[nudge_i]["tick"]) >= int(st.adoptions[idx]["tick"]))
 		if use_nudge:
 			lines.append("[color=#2b2d42][b]You:[/b] %s[/color]" % Replay.describe_nudge(st, st.nudge_log[nudge_i]).split(": ", true, 1)[1])
@@ -194,9 +230,9 @@ func _update_story(t: int) -> void:
 			var col := "#a8761c" if a["to"] == map.word else "#6b6f80"
 			lines.append("[color=#6b6f80]Wk %d[/color]  [url=%d][color=%s]%s[/color][/url]" % [wk, int(a["id"]), col, Replay.describe_adoption(st, a, signs)])
 			idx -= 1
-		shown += 1
 	if lines.is_empty():
-		lines.append("[color=#6b6f80]Nobody has switched words yet. Everyone except a few committed speakers says \"soda.\"[/color]")
+		var first: String = st.concepts[map.concept][0]
+		lines.append("[color=#6b6f80]Nobody has switched words yet. \"%s\" and \"%s\" are where they started.[/color]" % [first, map.word])
 	story.text = "\n".join(lines)
 
 
@@ -236,19 +272,21 @@ func _compare(real: Dictionary, result: Dictionary) -> String:
 	var w := GameSession.weights
 	var alt: Dictionary = result["without"]
 	var lines: Array = []
+	var key := MetricsSystem.share_key(map.word)
 	lines.append("[b]In your town:[/b] charter score %d with it, %d without it. \"%s\": %d%% with it, %d%% without it." % [
 		int(round(MetricsSystem.score(real, w))), int(round(MetricsSystem.score(alt, w))),
-		map.word, int(round(real["pop_share"] * 100)), int(round(alt["pop_share"] * 100))])
+		map.word, int(round(real[key] * 100)), int(round(alt[key] * 100))])
 	var verdicts := Replay.judge(real, result)
 	var real_fx: Array = []
 	var luck_fx: Array = []
 	for v in verdicts:
-		var name: String = "Saying \"%s\"" % map.word if v["key"] == "pop_share" else MetricsSystem.LABELS[v["key"]]
+		var is_word: bool = str(v["key"]).begins_with("share:")
+		var name: String = MetricsSystem.word_label(v["key"]) if is_word else MetricsSystem.LABELS[v["key"]]
 		var pts := int(round(absf(v["mean"]) * 100))
 		if v["verdict"] == "real":
 			var col := "#1f7a6f" if v["helped"] else "#c0533a"
 			var how := "went up" if v["mean"] > 0 else "went down"
-			if v["key"] in MetricsSystem.HIDDEN or v["key"] == "pop_share":
+			if v["key"] in MetricsSystem.HIDDEN or is_word:
 				how = ("rose" if v["mean"] > 0 else "fell")
 			real_fx.append("  [color=%s]%s %s about %d points[/color]  [color=#6b6f80](%d of %d runs)[/color]" % [col, name, how, pts, v["agree"], v["runs"]])
 		elif v["verdict"] == "luck":

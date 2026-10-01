@@ -4,7 +4,7 @@ extends Control
 ##
 ## Dot color: home language (teal = heritage, orange = town, purple = helper).
 ## Arc around a dot: how much of the OTHER language that person has picked up.
-## White center: says "pop" instead of "soda".
+## White center: uses the newer word for the concept chosen in the word lens.
 ## Gold lines: strong friendships that cross language groups. Hover a dot to see all of that person's ties.
 
 signal villager_hovered(id: int)
@@ -13,6 +13,7 @@ signal villager_clicked(id: int)
 const DESIGN := Vector2(800, 720)
 
 var st: SimState
+var concept := "fizzy drink"
 var hover_id := -1
 var selected: Array = []
 var _dots := {}          # id -> screen position
@@ -23,6 +24,11 @@ var _off := Vector2.ZERO
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	clip_contents = true
+
+
+## The word highlighted on the map: the challenger word for the chosen concept.
+func lens_word() -> String:
+	return st.concepts[concept][1] if st != null else ""
 
 
 func to_screen(p: Vector2) -> Vector2:
@@ -82,8 +88,11 @@ func _draw() -> void:
 		if pl.event_booked(st.tick):
 			var kind := "Heritage nights" if pl.event_theme == "heritage" else "Mixer events"
 			tags.append(kind if pl.has_event(st.tick) else kind + " (from tomorrow)")
+		var sign_counts := {}
 		for sgn in pl.signs:
-			tags.append("Sign: " + str(sgn["variant"]))
+			sign_counts[sgn["variant"]] = sign_counts.get(sgn["variant"], 0) + 1
+		for w in sign_counts:
+			tags.append("Sign: %s%s" % [w, "" if sign_counts[w] == 1 else " (%d)" % sign_counts[w]])
 		if not tags.is_empty():
 			draw_string(font, rect.position + Vector2(6, rect.size.y / _k + 13) * _k, ", ".join(tags), HORIZONTAL_ALIGNMENT_LEFT, -1, int(12 * _k), UiStyle.GOLD.darkened(0.3))
 		if not pl.built:
@@ -106,7 +115,7 @@ func _draw() -> void:
 			var amount: float = v.p[other]
 			if amount > 0.02:
 				draw_arc(p, r + 2.5 * _k, -PI / 2, -PI / 2 + TAU * amount, 24, other_col, 2.0 * _k, true)
-		if v.variant.get("fizzy drink", "soda") == "pop":
+		if v.variant.get(concept, "") == lens_word():
 			draw_circle(p, r * 0.4, Color.WHITE)
 		if v.stage == Villager.Stage.ELDER:
 			draw_arc(p, r, 0, TAU, 20, UiStyle.INK.lightened(0.3), 1.0 * _k, true)
@@ -171,7 +180,7 @@ func _draw_legend(font: Font) -> void:
 		draw_string(font, base + Vector2(x + 16, 5) * _k, it[1], HORIZONTAL_ALIGNMENT_LEFT, -1, int(12 * _k), UiStyle.INK)
 		x += 175
 	var line2 := to_screen(Vector2(12, 684))
-	draw_string(font, line2, "Ring = other language learned.  White center = says \"pop\".  Gold line = strong friendship across groups.", HORIZONTAL_ALIGNMENT_LEFT, -1, int(12 * _k), UiStyle.MUTED)
+	draw_string(font, line2, "Ring = other language learned.  White center = says \"%s\".  Gold line = strong friendship across groups." % lens_word(), HORIZONTAL_ALIGNMENT_LEFT, -1, int(12 * _k), UiStyle.MUTED)
 
 
 func _gui_input(event: InputEvent) -> void:
