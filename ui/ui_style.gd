@@ -34,6 +34,21 @@ static func make_theme() -> Theme:
 
 	t.set_stylebox("panel", "PanelContainer", _box(PANEL, 0, 14, 12))
 	t.set_stylebox("panel", "PopupPanel", _box(PANEL, 8, 16, 16))
+	# Dialogs (season-end messages): light panel and frame so dark text stays readable.
+	t.set_stylebox("panel", "AcceptDialog", _box(PANEL, 0, 18, 14))
+	var frame := _box(PANEL, 8, 0, 0)
+	frame.border_color = LINE.darkened(0.25)
+	frame.set_border_width_all(2)
+	frame.expand_margin_top = 30
+	frame.expand_margin_left = 6
+	frame.expand_margin_right = 6
+	frame.expand_margin_bottom = 6
+	frame.shadow_color = Color(0, 0, 0, 0.25)
+	frame.shadow_size = 12
+	t.set_stylebox("embedded_border", "Window", frame)
+	t.set_stylebox("embedded_unfocused_border", "Window", frame)
+	t.set_color("title_color", "Window", INK)
+	t.set_color("close_color", "Window", INK)
 
 	var bar_bg := _box(LINE, 4, 0, 0)
 	var bar_fill := _box(TEAL, 4, 0, 0)

@@ -4,6 +4,8 @@ A complex-systems game about how language moves through a community.
 
 **Developed by Julianne Hammink**
 
+**[Play in your browser](https://hamminkj.github.io/smalltown/)** (no install; works best on a laptop or desktop in Chrome, Edge, or Firefox)
+
 ![The town map mid-year](docs/screenshot-game.png)
 
 You are the town's community connector. Thirty neighbors live here: some speak the town language at home, and some speak a heritage language. You can't teach anyone or tell anyone what to do. You can only **nudge**: open a place where people meet, hold an event, introduce two people, hire a bilingual helper, or put up a sign. Words, habits, and friendships spread on their own.
@@ -15,6 +17,8 @@ At the start you write a **town charter**: you give points to the outcomes your 
 Playable prototype (v0.4). One town, one year (4 seasons of 12 weeks), two languages, two competing word pairs, and a replay with "what if" at the end of the year.
 
 ## Running it
+
+The easiest way is the [browser version](https://hamminkj.github.io/smalltown/). To run or change it in Godot:
 
 1. Install [Godot 4.4](https://godotengine.org/download) (standard version, not .NET).
 2. Open Godot, choose **Import**, and select this folder's `project.godot`.
@@ -107,6 +111,16 @@ tests/word_census.gd       Runs 24 towns and counts how each word pair ended
 tests/screenshots.gd       Renders each screen to tests/output/*.png
 docs/                      Design spec, Godot plan, and starting roster
 ```
+
+## Publishing the web version
+
+The browser version is exported with the "Web" preset in `export_presets.cfg` (single-threaded, so it runs on any static host, including GitHub Pages) and lives on the `gh-pages` branch.
+
+```
+godot --headless --export-release "Web" build/web/index.html
+```
+
+Then copy `build/web/` to the root of the `gh-pages` branch (with an empty `.nojekyll` file) and push. In the browser, "what if" runs its replays one per frame instead of on a background thread; it takes about 10 seconds.
 
 ## Testing and tuning
 

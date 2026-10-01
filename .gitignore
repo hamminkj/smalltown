@@ -2,9 +2,11 @@
 .godot/
 /android/
 *.translation
-export_presets.cfg
 export_credentials.cfg
 
 # Batch-run and screenshot output
 tests/output/*
 !tests/output/.gdignore
+
+# Web export output (published separately to the gh-pages branch)
+build/

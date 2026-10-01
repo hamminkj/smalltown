@@ -133,7 +133,16 @@ func _ready() -> void:
 	credit.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(credit)
 
-	_set_concept(st.concepts.keys()[0])
+	# Open on whichever word pair saw the most switching this year.
+	var busiest: String = st.concepts.keys()[0]
+	var counts := {}
+	for a in st.adoptions:
+		counts[a["concept"]] = counts.get(a["concept"], 0) + 1
+	for c in counts:
+		if counts[c] > counts.get(busiest, 0):
+			busiest = c
+	word_pick.select(st.concepts.keys().find(busiest))
+	_set_concept(busiest)
 
 
 ## Switch which word pair the replay traces, and jump to just before its first switch.
@@ -243,8 +252,40 @@ func _run_whatif() -> void:
 	whatif_b.disabled = true
 	whatif_pick.disabled = true
 	progress = [0]
-	worker = Thread.new()
-	worker.start(Replay.whatif.bind(st.seed_value, st.nudge_log, i, st.tick, progress))
+	if OS.has_feature("threads"):
+		worker = Thread.new()
+		worker.start(Replay.whatif.bind(st.seed_value, st.nudge_log, i, st.tick, progress))
+	else:
+		_run_whatif_in_frames(i)
+
+
+## Browsers without thread support: run each replay on its own frame so the progress line updates.
+func _run_whatif_in_frames(skip: int) -> void:
+	var total := 1 + 2 * Replay.LUCK_RUNS
+	var step := func(done: int) -> void:
+		whatif_out.text = "[color=#6b6f80]Replaying the year without it, then checking %d more times with different luck... %d of %d[/color]" % [Replay.LUCK_RUNS, done, total]
+	step.call(0)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var without := Replay.rerun(st.seed_value, st.nudge_log, skip, st.tick)
+	var pairs: Array = []
+	var done := 1
+	for s in Replay.luck_seeds(st.seed_value):
+		step.call(done)
+		await get_tree().process_frame
+		var with_it: SimState = Replay.rerun(s, st.nudge_log, -1, st.tick)["state"]
+		done += 1
+		step.call(done)
+		await get_tree().process_frame
+		var without_it: SimState = Replay.rerun(s, st.nudge_log, skip, st.tick)["state"]
+		done += 1
+		pairs.append([with_it.history[-1], without_it.history[-1]])
+	var result := {"without": without["state"].history[-1], "failed": without["failed"], "pairs": pairs}
+	whatif_b.disabled = false
+	whatif_pick.disabled = false
+	whatif_out.text = _compare(st.history[-1], result)
+	await get_tree().process_frame
+	scroll.ensure_control_visible(whatif_out)
 
 
 func _poll_whatif() -> void:
