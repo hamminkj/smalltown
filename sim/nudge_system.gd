@@ -40,15 +40,16 @@ static func build(st: SimState, place_id: int) -> bool:
 ## theme "heritage": a heritage-language night; anyone who can follow speaks the heritage language.
 static func event(st: SimState, place_id: int, theme: String = "mixer") -> bool:
 	var pl: Place = st.place_by_id[place_id]
-	if not pl.built or pl.kind != "public" or pl.has_event(st.tick):
+	if not pl.built or pl.kind != "public" or pl.event_booked(st.tick):
 		return false
 	if not _spend(st, "event", {"place": place_id, "theme": theme}):
 		return false
-	pl.event_until = st.tick + SimState.TICKS_PER_WEEK
+	# Events start with the next day's plans and run for a week.
+	@warning_ignore("integer_division")
+	var next_day := (st.tick / SimState.TICKS_PER_DAY + 1) * SimState.TICKS_PER_DAY
+	pl.event_start = next_day
+	pl.event_until = next_day + SimState.TICKS_PER_WEEK
 	pl.event_theme = theme
-	# Reroll today's remaining plans so the event draws people right away.
-	for v: Villager in st.villagers:
-		v.schedule = MovementSystem.roll_day(st, v)
 	if theme == "heritage":
 		st.log_event("A week of heritage-language nights begins at the %s." % pl.title)
 	else:
@@ -81,7 +82,10 @@ static func helper(st: SimState) -> bool:
 	for c in st.concepts:
 		v.variant[c] = "soda"
 	st.add_villager(v)
-	v.schedule = MovementSystem.roll_day(st, v)
+	# A private random stream for the newcomer's first day, so hiring doesn't shift anyone else's luck.
+	var first_day := RandomNumberGenerator.new()
+	first_day.seed = hash([st.seed_value, "helper", st.tick])
+	v.schedule = MovementSystem.roll_day(st, v, first_day)
 	st.helper_count += 1
 	st.log_event("%s joins the town as a bilingual helper." % v.display_name)
 	return true

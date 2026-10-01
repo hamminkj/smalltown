@@ -33,6 +33,7 @@ const DESCRIPTIONS := {
 static func snapshot(st: SimState) -> Dictionary:
 	return {
 		"week": st.week(),
+		"tick": st.tick,
 		"job_access": job_access(st),
 		"neighbor_trust": neighbor_trust(st),
 		"kids_school": kids_school(st),

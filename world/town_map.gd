@@ -79,8 +79,9 @@ func _draw() -> void:
 		var title := pl.title if pl.built else "Empty lot"
 		draw_string(font, rect.position + Vector2(6, 15) * _k, title, HORIZONTAL_ALIGNMENT_LEFT, rect.size.x, int(13 * _k), UiStyle.INK)
 		var tags: Array = []
-		if pl.has_event(st.tick):
-			tags.append("Heritage night" if pl.event_theme == "heritage" else "Mixer event")
+		if pl.event_booked(st.tick):
+			var kind := "Heritage nights" if pl.event_theme == "heritage" else "Mixer events"
+			tags.append(kind if pl.has_event(st.tick) else kind + " (from tomorrow)")
 		for sgn in pl.signs:
 			tags.append("Sign: " + str(sgn["variant"]))
 		if not tags.is_empty():

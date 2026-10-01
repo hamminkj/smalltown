@@ -35,6 +35,7 @@ var params := {
 	"decay_floor": 0.15,          # floor for anyone who once exceeded 0.6
 	"exposure_window": 56,        # ticks an exposure counts toward adoption
 	"switch_ratio": 0.5,          # new-variant sources needed per current-variant source
+	"sign_notice": 0.1,           # chance a villager notices a sign on each visit
 	"w_gain": 0.02,
 	"s_step": 0.1,
 	"w_idle": 0.001,
@@ -46,7 +47,12 @@ var params := {
 	"event_pull": 0.5,            # chance a free slot is spent at an active event
 }
 
-var rng := RandomNumberGenerator.new()
+## Separate random streams per system, so a nudge that changes one system
+## doesn't reshuffle the luck of all the others. That keeps "what if" replays fair.
+var rng := RandomNumberGenerator.new()          # movement and schedules
+var rng_talk := RandomNumberGenerator.new()     # pairing and conversation success
+var rng_spread := RandomNumberGenerator.new()   # noticing signs
+var rng_rewire := RandomNumberGenerator.new()   # weekly tie rewiring
 var seed_value := 0
 var tick := 0
 
@@ -62,9 +68,11 @@ var budget := SEASON_BUDGET
 var event_log: Array = []          # [{tick, text}]
 var nudge_log: Array = []          # [{tick, nudge, args}] for replays
 var adoptions: Array = []          # [{tick, id, concept, from, to, sources}]
+var initial_variants := {}         # id -> {concept: variant} at the moment each villager arrived
 var pending_meets: Array = []      # [[a, b]] introductions waiting to happen
 var next_sign_source := -1
 var helper_count := 0
+var word_band := {}                # word -> last share band announced (0 to 3)
 
 var week_stats := {}
 var history: Array = []            # weekly metric snapshots
@@ -115,6 +123,7 @@ func add_villager(v: Villager) -> void:
 	by_id[v.id] = v
 	adjacency[v.id] = {}
 	v.location = v.home_place
+	initial_variants[v.id] = v.variant.duplicate()
 
 
 func residents() -> Array:
@@ -175,10 +184,18 @@ func ties_of(id: int) -> Array:
 
 # ---- misc ----
 
-func shuffled(arr: Array) -> Array:
+func set_seed(value: int) -> void:
+	seed_value = value
+	rng.seed = value
+	rng_talk.seed = hash([value, "talk"])
+	rng_spread.seed = hash([value, "spread"])
+	rng_rewire.seed = hash([value, "rewire"])
+
+
+func shuffled(arr: Array, r: RandomNumberGenerator) -> Array:
 	var out := arr.duplicate()
 	for i in range(out.size() - 1, 0, -1):
-		var j := rng.randi_range(0, i)
+		var j := r.randi_range(0, i)
 		var tmp = out[i]
 		out[i] = out[j]
 		out[j] = tmp

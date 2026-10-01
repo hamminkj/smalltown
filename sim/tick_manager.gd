@@ -24,7 +24,23 @@ func step() -> bool:
 	if st.tick % SimState.TICKS_PER_WEEK == 0:
 		RewiringSystem.run(st)
 		MetricsSystem.sample_weekly(st)
+		_word_news(st)
 	if st.tick % SimState.TICKS_PER_SEASON == 0:
 		NudgeSystem.new_season(st)
 		season_ended = true
 	return season_ended
+
+
+## Headlines when a newer word crosses a quarter, half, or three quarters of the town.
+static func _word_news(st: SimState) -> void:
+	const BANDS := ["a few people", "a quarter of the town", "half the town", "three quarters of the town"]
+	for c in st.concepts:
+		for word in st.concepts[c].slice(1):
+			var share := MetricsSystem.variant_share(st, c, word)
+			var band := mini(3, int(floor(share * 4.0 + 0.0001)))
+			var old: int = st.word_band.get(word, 0)
+			if band > old:
+				st.log_event("\"%s\" has spread to %s." % [word, BANDS[band]])
+			elif band < old:
+				st.log_event("\"%s\" is fading; now under %s." % [word, BANDS[old]])
+			st.word_band[word] = band

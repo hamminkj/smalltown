@@ -271,8 +271,7 @@ func _finish() -> void:
 	if finished:
 		return
 	finished = true
-	if st.history.is_empty() or st.history[-1]["week"] != st.week():
-		st.history.append(MetricsSystem.snapshot(st))
+	Replay.close_out(st)
 	get_tree().change_scene_to_file("res://ui/end_report.tscn")
 
 
@@ -343,7 +342,7 @@ func _refresh_place_options(ob: OptionButton, skip_busy: bool) -> void:
 	var ids: Array = []
 	for pl: Place in st.places:
 		if pl.kind == "public" and pl.built:
-			if skip_busy and pl.has_event(st.tick):
+			if skip_busy and pl.event_booked(st.tick):
 				continue
 			ids.append(pl.id)
 	var current: Array = []

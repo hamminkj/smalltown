@@ -26,7 +26,7 @@ func _process(_d: float) -> bool:
 			snap("2_charter")
 			var gs = root.get_node("GameSession")
 			gs.set_charter("Families and Elders", gs.PRESETS["Families and Elders"])
-			gs.seed_value = 42
+			gs.seed_value = 1
 			gs.start_run()
 			change_scene_to_file("res://ui/game_screen.tscn")
 		2:
@@ -54,6 +54,24 @@ func _process(_d: float) -> bool:
 			current_scene._finish()
 		5:
 			snap("5_end_report")
+			change_scene_to_file("res://ui/replay_screen.tscn")
+		6:
+			var rp = current_scene
+			var tip := Replay.tipping_week(rp.st)
+			rp._seek(maxi(0, tip * 28 - 10))
+			rp._next_switch()
+		7:
+			snap("6_replay")
+			var rp = current_scene
+			rp.whatif_pick.select(rp.whatif_pick.get_item_index(1))
+			rp._run_whatif()
+			rp._focus(-1)
+			rp.map.focus_id = -1
+		8:
+			if current_scene.worker != null:
+				return false
+		9:
+			snap("7_whatif")
 			quit()
 			return true
 	stage += 1

@@ -10,6 +10,7 @@ var box := Vector2(120, 70)
 var built := true
 var buildable := false      # an empty lot the player can build on
 var home_lang := ""         # for homes: the household's language
+var event_start := -1       # tick when the current event begins
 var event_until := -1       # tick when the current event ends
 var event_theme := ""       # "mixer" or "heritage"
 var signs: Array = []       # [{concept, variant, source}]
@@ -25,4 +26,9 @@ func norm_lang(tick: int = -1) -> String:
 
 
 func has_event(tick: int) -> bool:
+	return tick >= event_start and tick < event_until
+
+
+## True while an event is scheduled or running (so it can't be booked twice).
+func event_booked(tick: int) -> bool:
 	return tick < event_until

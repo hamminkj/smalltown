@@ -6,7 +6,7 @@ extends RefCounted
 static func run(st: SimState) -> void:
 	var chance: float = st.params["rewire_chance"]
 	for v: Villager in st.villagers:
-		if st.rng.randf() < chance:
+		if st.rng_rewire.randf() < chance:
 			_drop_weakest(st, v)
 			_add_best_new(st, v)
 	for v: Villager in st.villagers:

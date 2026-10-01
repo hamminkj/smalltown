@@ -24,7 +24,8 @@ var peak := {"T": 0.0, "H": 0.0}
 var last_used := {"T": 0, "H": 0}
 var home_lang := "T"            # "T", "H", or "B" (bilingual helper)
 var variant := {}               # concept -> variant name
-var exposures: Array = []       # [{concept, variant, source, tick}]
+var heard := {}                 # concept -> {variant -> {source -> last tick heard}}
+var heard_new := false          # heard something since the last adoption check
 
 # Daily life
 var schedule: Array = [0, 0, 0, 0]
@@ -62,6 +63,15 @@ func set_prof(lang: String, value: float) -> void:
 
 
 ## Mutual intelligibility: the best shared language level between two people.
+func hear(concept: String, word: String, source: int, tick: int) -> void:
+	if not heard.has(concept):
+		heard[concept] = {}
+	if not heard[concept].has(word):
+		heard[concept][word] = {}
+	heard[concept][word][source] = tick
+	heard_new = true
+
+
 static func mutual(a: Villager, b: Villager) -> float:
 	var best := 0.0
 	for lang in a.p:

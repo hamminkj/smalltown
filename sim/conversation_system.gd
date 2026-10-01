@@ -31,12 +31,12 @@ static func run(st: SimState) -> Array:
 		var place: Place = st.place_by_id[pid]
 		var rounds := 2 if place.has_event(st.tick) else 1
 		for _r in rounds:
-			var pool := st.shuffled(groups[pid])
+			var pool := st.shuffled(groups[pid], st.rng_talk)
 			var used := already.duplicate() if _r == 0 else {}
 			for v: Villager in pool:
 				if _full(v, used):
 					continue
-				if st.rng.randf() < v.shyness * st.params["shy_skip"]:
+				if st.rng_talk.randf() < v.shyness * st.params["shy_skip"]:
 					continue
 				var partner := _choose_partner(st, v, pool, used)
 				if partner == null:
@@ -72,7 +72,7 @@ static func _choose_partner(st: SimState, v: Villager, pool: Array, used: Dictio
 		total += weight
 	if cands.is_empty():
 		return null
-	var roll := st.rng.randf() * total
+	var roll := st.rng_talk.randf() * total
 	for i in cands.size():
 		roll -= weights[i]
 		if roll <= 0.0:
@@ -105,7 +105,7 @@ static func talk(st: SimState, a: Villager, b: Villager, place: Place) -> Dictio
 	var lang := choose_language(st, a, b, place)
 	var m := minf(a.p[lang], b.p[lang])
 	var floor_p: float = st.params["gesture_floor"]
-	var success := st.rng.randf() < floor_p + (1.0 - floor_p) * m
+	var success := st.rng_talk.randf() < floor_p + (1.0 - floor_p) * m
 
 	_learn(st, a, b, lang, success)
 	_learn(st, b, a, lang, success)
@@ -135,8 +135,8 @@ static func talk(st: SimState, a: Villager, b: Villager, place: Place) -> Dictio
 
 	if success:
 		for c in st.concepts:
-			a.exposures.append({"concept": c, "variant": b.variant[c], "source": b.id, "tick": st.tick})
-			b.exposures.append({"concept": c, "variant": a.variant[c], "source": a.id, "tick": st.tick})
+			a.hear(c, b.variant[c], b.id, st.tick)
+			b.hear(c, a.variant[c], a.id, st.tick)
 
 	# Weekly stats for metrics
 	var ws := st.week_stats

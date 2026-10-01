@@ -56,8 +56,7 @@ const H_HOMES := [1, 2, 3, 4]
 
 static func build(seed_value: int) -> SimState:
 	var st := SimState.new()
-	st.seed_value = seed_value
-	st.rng.seed = seed_value
+	st.set_seed(seed_value)
 	_build_places(st)
 	_build_villagers(st)
 	_build_ties(st)
